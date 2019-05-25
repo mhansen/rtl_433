@@ -1,0 +1,8 @@
+{
+  "files.associations": {
+    "rtl_433_devices.h": "c",
+    "r_private.h": "c",
+    "rtl_433.h": "c",
+    "rtl-sdr.h": "c"
+  }
+}
