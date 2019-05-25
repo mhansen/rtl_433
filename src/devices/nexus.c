@@ -61,45 +61,47 @@ static int nexus_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         if ((bb[r][3]&0xF0) != 0xF0)
             return DECODE_ABORT_EARLY;
 
-        /* Nibble 0,1 contains id */
-        id = bb[r][0];
+    /* if const is not 1111 then abort */
+    if ((bb[r][3] & 0xF0) != 0xF0) {
+        return 0;
+    }
 
-        /* Nibble 2 is battery and channel */
-        battery = bb[r][1]&0x80;
-        channel = ((bb[r][1]&0x30) >> 4) + 1;
+    /* Nibble 0,1 contains id */
+    uint8_t id = bb[r][0];
 
-        /* Nibble 3,4,5 contains 12 bits of temperature
-         * The temperature is signed and scaled by 10 */
-        temp = (int16_t)((uint16_t)(bb[r][1] << 12) | (bb[r][2] << 4));
-        temp = temp >> 4;
+    /* Nibble 2 is battery and channel */
+    uint8_t battery = bb[r][1] & 0x80;
+    uint8_t channel = ((bb[r][1] & 0x30) >> 4) + 1;
 
-        /* Nibble 6,7 is humidity */
-        humidity = (uint8_t)(((bb[r][3]&0x0F)<<4)|(bb[r][4]>>4));
+    /* Nibble 3,4,5 contains 12 bits of temperature
+        * The temperature is signed and scaled by 10 */
+    int16_t temp = (int16_t)((uint16_t)(bb[r][1] << 12) | (bb[r][2] << 4));
+    temp = temp >> 4;
 
-        // Thermo
-        if (humidity == 0x00) {
+    /* Nibble 6,7 is humidity */
+    uint8_t humidity = (uint8_t)(((bb[r][3] & 0x0F) << 4) | (bb[r][4] >> 4));
+
+    // Thermo
+    data_t *data;
+    if (humidity == 0x00) {
         data = data_make(
-                "model",         "",            DATA_STRING, _X("Nexus-T","Nexus Temperature"),
-                "id",            "House Code",  DATA_INT, id,
-                "channel",       "Channel",     DATA_INT, channel,
-                "battery",       "Battery",     DATA_STRING, battery ? "OK" : "LOW",
-                "temperature_C", "Temperature", DATA_FORMAT, "%.02f C", DATA_DOUBLE, temp/10.0,
+                "model", "", DATA_STRING, _X("Nexus-T", "Nexus Temperature"),
+                "id", "House Code", DATA_INT, id,
+                "channel", "Channel", DATA_INT, channel,
+                "battery", "Battery", DATA_STRING, battery ? "OK" : "LOW",
+                "temperature_C", "Temperature", DATA_FORMAT, "%.02f C", DATA_DOUBLE, temp / 10.0,
                 NULL);
-        decoder_output_data(decoder, data);
-        }
-        // Thermo/Hygro
-        else {
+    }
+    // Thermo/Hygro
+    else {
         data = data_make(
-                "model",         "",            DATA_STRING, _X("Nexus-TH","Nexus Temperature/Humidity"),
+                "model",         "",            DATA_STRING, _X("Nexus-TH", "Nexus Temperature/Humidity"),
                 "id",            "House Code",  DATA_INT, id,
                 "channel",       "Channel",     DATA_INT, channel,
                 "battery",       "Battery",     DATA_STRING, battery ? "OK" : "LOW",
                 "temperature_C", "Temperature", DATA_FORMAT, "%.02f C", DATA_DOUBLE, temp/10.0,
                 "humidity",      "Humidity",    DATA_FORMAT, "%u %%", DATA_INT, humidity,
                 NULL);
-        decoder_output_data(decoder, data);
-        }
-        return 1;
     }
     return DECODE_ABORT_EARLY;
 }
