@@ -10,7 +10,7 @@ WORKDIR /tmp/rtl_433
 RUN mkdir -p build && \
     cd build && \
     cmake ../ && \
-    make -j4 rtl_433 && \
+    make -j4 && \
     make install && \
     cd / && \
     rm -rf /tmp
